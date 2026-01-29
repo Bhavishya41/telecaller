@@ -11,7 +11,7 @@ const getHeaders = () => {
 export const api = {
     // Auth endpoints
     login: async (credentials) => {
-        const response = await fetch(`${BASE_URL}/api/auth/login`, {
+        const response = await fetch(`${BASE_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(credentials),
@@ -22,7 +22,7 @@ export const api = {
     },
 
     register: async (userData) => {
-        const response = await fetch(`${BASE_URL}/api/auth/register`, {
+        const response = await fetch(`${BASE_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(userData),
@@ -35,7 +35,7 @@ export const api = {
     // Business endpoints
     getBusinesses: async (params) => {
         const query = new URLSearchParams(params).toString();
-        const response = await fetch(`${BASE_URL}/api/businesses?${query}`, {
+        const response = await fetch(`${BASE_URL}/businesses?${query}`, {
             method: 'GET',
             headers: getHeaders(),
         });
@@ -45,7 +45,7 @@ export const api = {
     },
 
     addBusiness: async (businessData) => {
-        const response = await fetch(`${BASE_URL}/api/businesses`, {
+        const response = await fetch(`${BASE_URL}/businesses`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify(businessData),
@@ -56,7 +56,7 @@ export const api = {
     },
 
     importBusinesses: async (businesses) => {
-        const response = await fetch(`${BASE_URL}/api/businesses/import`, {
+        const response = await fetch(`${BASE_URL}/businesses/import`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify(businesses),
@@ -67,7 +67,7 @@ export const api = {
     },
 
     updateBusiness: async (id, businessData) => {
-        const response = await fetch(`${BASE_URL}/api/businesses/${id}`, {
+        const response = await fetch(`${BASE_URL}/businesses/${id}`, {
             method: 'PUT',
             headers: getHeaders(),
             body: JSON.stringify(businessData),
@@ -78,7 +78,7 @@ export const api = {
     },
 
     deleteBusiness: async (id) => {
-        const response = await fetch(`${BASE_URL}/api/businesses/${id}`, {
+        const response = await fetch(`${BASE_URL}/businesses/${id}`, {
             method: 'DELETE',
             headers: getHeaders(),
         });
@@ -89,7 +89,7 @@ export const api = {
 
     // Staff/User endpoints
     getStaff: async () => {
-        const response = await fetch(`${BASE_URL}/api/users`, {
+        const response = await fetch(`${BASE_URL}/users`, {
             method: 'GET',
             headers: getHeaders(),
         });
@@ -99,7 +99,7 @@ export const api = {
     },
 
     assignBusinesses: async (payload) => {
-        const response = await fetch(`${BASE_URL}/api/businesses/assign`, {
+        const response = await fetch(`${BASE_URL}/businesses/assign`, {
             method: 'PUT',
             headers: getHeaders(),
             body: JSON.stringify(payload),
