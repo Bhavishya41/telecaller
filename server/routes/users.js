@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const Telecaller = require('../models/Telecaller');
 const NodeCache = require('node-cache');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 // Initialize Cache (StdTTL: 5 minutes)
 const cache = new NodeCache({ stdTTL: 300 });
