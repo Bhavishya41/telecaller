@@ -15,7 +15,7 @@ const BusinessTable = ({ businesses, selectedIds, onToggleSelect, onToggleAll })
   return (
     <div className="w-full h-full flex flex-col">
       {/* Mobile View: Scrollable Cards */}
-      <div className="md:hidden overflow-y-auto space-y-4 pb-20">
+      <div className="md:hidden flex-1 min-h-0 overflow-y-auto space-y-4 pb-20">
         {businesses.length > 0 && (
              <div className="flex items-center justify-between px-1 mb-2 sticky top-0 bg-black py-2 z-10">
                 <label className="flex items-center gap-2 text-sm text-zinc-400">

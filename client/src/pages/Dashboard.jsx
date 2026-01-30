@@ -12,6 +12,7 @@ const Dashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   
   // Selection State
@@ -192,9 +193,9 @@ const Dashboard = () => {
     <div className="h-screen bg-black text-white flex flex-col overflow-hidden">
       {/* Navigation - Fixed Height */}
       <nav className="bg-zinc-900/50 backdrop-blur-md border-b border-zinc-800 shrink-0 z-30">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <h1 className="text-2xl font-light tracking-tight">
-                TeleConnect {user.role === 'admin' && <span className="text-[10px] bg-red-900/50 text-red-200 px-2 py-0.5 rounded border border-red-900 ml-2 align-middle">ADMIN</span>}
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex justify-between items-center gap-4">
+            <h1 className="text-xl md:text-2xl font-light tracking-tight truncate shrink min-w-0">
+                TeleConnect {user.role === 'admin' && <span className="hidden md:inline text-[10px] bg-red-900/50 text-red-200 px-2 py-0.5 rounded border border-red-900 ml-2 align-middle">ADMIN</span>}
             </h1>
             
             {user.role === 'admin' && (
@@ -214,31 +215,36 @@ const Dashboard = () => {
                     </div>
                 </div>
             )}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3 md:gap-6 shrink-0">
                 <span className="text-zinc-400 hidden md:block text-sm">
                     Hello, <b className="text-white font-medium">{user.name}</b>
                 </span>
                 {user.role === "admin" && (
-                    <button onClick={() => setShowModal(true)} className="bg-white text-black hover:bg-zinc-200 px-4 py-2 rounded-lg transition-all text-sm font-semibold flex items-center gap-2">
-                        + Add Business
+                    <button onClick={() => setShowModal(true)} className="bg-white text-black hover:bg-zinc-200 px-3 py-2 md:px-4 md:py-2 rounded-lg transition-all text-sm font-semibold flex items-center gap-2 shadow-lg shadow-white/5">
+                        <span className="md:hidden"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg></span>
+                        <span className="hidden md:inline">+ Add Business</span>
                     </button>
                 )}
                 <button onClick={() => fetchBusinesses()} className="text-zinc-500 hover:text-white transition-colors text-sm font-medium flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                    Refresh
+                    <svg className="w-5 h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    <span className="hidden md:inline">Refresh</span>
                 </button>
-                <button onClick={handleLogout} className="text-zinc-500 hover:text-white transition-colors text-sm font-medium">Logout</button>
+                <button onClick={handleLogout} className="text-zinc-500 hover:text-white transition-colors text-sm font-medium">
+                    <span className="hidden md:inline">Logout</span>
+                    <span className="md:hidden"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg></span>
+                </button>
             </div>
         </div>
       </nav>
       
       {/* Main Content Area - Constrained to prevent page scroll */}
-      <main className="flex-1 flex flex-col min-h-0 w-full max-w-7xl mx-auto p-4 md:p-6">
+      <main className="flex-1 flex flex-col min-h-0 w-full max-w-7xl mx-auto p-4 md:p-6 relative">
           
           {/* Header & Filters Section - Stays at top */}
           <div className="shrink-0 space-y-4 mb-4">
               {user.role === 'admin' ? (
                     <div className="flex flex-col gap-3">
+                        {/* Mobile Search & Filter Toggle */}
                         <div className="flex gap-2 mb-1 md:hidden">
                             <div className="relative flex-1">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">
@@ -246,7 +252,7 @@ const Dashboard = () => {
                                 </span>
                                 <input 
                                     type="text" 
-                                    placeholder="Search by Name or Phone..." 
+                                    placeholder="Search..." 
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && fetchBusinesses(user, filters, searchTerm)}
@@ -254,26 +260,36 @@ const Dashboard = () => {
                                 />
                             </div>
                             <button 
-                                onClick={() => fetchBusinesses(user, filters, searchTerm)}
-                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-indigo-900/20"
+                                onClick={() => setShowFilters(!showFilters)}
+                                className={`px-3 py-2 border border-zinc-700 rounded-lg text-zinc-300 transition-colors ${showFilters ? 'bg-zinc-800 text-white' : 'bg-zinc-900'}`}
                             >
-                                Search
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
                             </button>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 bg-zinc-900/90 p-4 rounded-xl border border-zinc-800 shadow-xl">
-                            <input name="city" placeholder="City" value={filters.city} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm focus:border-zinc-600 outline-none" />
-                            <input name="state" placeholder="State" value={filters.state} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm focus:border-zinc-600 outline-none" />
-                            <select name="category" value={filters.category} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm outline-none">
+
+                        {/* Filters Area */}
+                        <div className={`${showFilters ? 'grid' : 'hidden md:grid'} grid-cols-2 md:grid-cols-5 gap-3 bg-zinc-900/90 p-4 rounded-xl border border-zinc-800 shadow-xl transition-all`}>
+                            <input name="city" placeholder="City" value={filters.city} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm focus:border-zinc-600 outline-none w-full" />
+                            <input name="state" placeholder="State" value={filters.state} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm focus:border-zinc-600 outline-none w-full" />
+                            <select name="category" value={filters.category} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm outline-none w-full">
                                 {categoryOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                             </select>
-                            <select name="type" value={filters.type} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm outline-none">
+                            <select name="type" value={filters.type} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm outline-none w-full">
                                 {typeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                             </select>
-                            <select name="registered" value={filters.registered} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm outline-none">
+                            <select name="registered" value={filters.registered} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm outline-none w-full col-span-2 md:col-span-1">
                                 <option value="All">All Status</option>
                                 <option value="true">Registered</option>
                                 <option value="false">Unregistered</option>
                             </select>
+                            
+                             {/* Mobile Search Button within filters if needed or action to apply */}
+                            <button 
+                                onClick={() => fetchBusinesses(user, filters, searchTerm)}
+                                className="md:hidden col-span-2 mt-2 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-indigo-900/20"
+                            >
+                                Apply Filters & Search
+                            </button>
                         </div>
                     </div>
               ) : (
@@ -284,38 +300,42 @@ const Dashboard = () => {
 
                 {/* Bulk Actions Bar */}
                 <div className="flex flex-col md:flex-row items-center justify-between bg-zinc-900/40 p-3 rounded-xl border border-zinc-800/60 gap-4">
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm text-zinc-400">
+                    <div className="flex items-center justify-between w-full md:w-auto gap-3">
+                        <span className="text-sm text-zinc-400 whitespace-nowrap">
                             <b className="text-zinc-100">{businesses.length}</b> items
                         </span>
                         {selectedIds.length > 0 && (
-                            <>
-                                <span className="w-1 h-1 rounded-full bg-zinc-700"></span>
-                                <span className="text-sm text-indigo-400 font-medium">{selectedIds.length} selected</span>
+                            <div className="flex items-center gap-2">
+                                <span className="hidden sm:inline w-1 h-1 rounded-full bg-zinc-700"></span>
+                                <span className="text-sm text-indigo-400 font-medium whitespace-nowrap">{selectedIds.length} selected</span>
                                 <button onClick={() => setSelectedIds([])} className="text-xs text-zinc-500 hover:text-white underline ml-1">Clear</button>
-                            </>
+                            </div>
                         )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <div className="grid grid-cols-4 md:flex items-center gap-2 w-full md:w-auto">
                         {user.role === 'admin' ? (
                             <>
-                                <button disabled={selectedIds.length === 0} onClick={() => setShowAssignModal(true)} className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${selectedIds.length > 0 ? 'bg-indigo-600/10 text-indigo-400 border-indigo-600/30 hover:bg-indigo-600/20' : 'opacity-30 cursor-not-allowed'}`}>
-                                    Assign
+                                <button disabled={selectedIds.length === 0} onClick={() => setShowAssignModal(true)} className={`px-2 md:px-3 py-2 md:py-1.5 rounded-lg text-xs font-semibold transition-all border flex items-center justify-center gap-1 ${selectedIds.length > 0 ? 'bg-indigo-600/10 text-indigo-400 border-indigo-600/30 hover:bg-indigo-600/20' : 'opacity-30 cursor-not-allowed'}`}>
+                                    <span className="md:hidden"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg></span>
+                                    <span className="hidden md:inline">Assign</span>
                                 </button>
-                                <button disabled={selectedIds.length === 0} onClick={handleDelete} className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${selectedIds.length > 0 ? 'bg-red-900/10 text-red-500 border-red-900/30 hover:bg-red-900/20' : 'opacity-30 cursor-not-allowed'}`}>
-                                    Delete
+                                <button disabled={selectedIds.length === 0} onClick={handleDelete} className={`px-2 md:px-3 py-2 md:py-1.5 rounded-lg text-xs font-semibold transition-all border flex items-center justify-center gap-1 ${selectedIds.length > 0 ? 'bg-red-900/10 text-red-500 border-red-900/30 hover:bg-red-900/20' : 'opacity-30 cursor-not-allowed'}`}>
+                                     <span className="md:hidden"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></span>
+                                    <span className="hidden md:inline">Delete</span>
                                 </button>
-                                <button disabled={businesses.length === 0} onClick={handleExportToExcel} className="flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold border bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700">
-                                    Export
+                                <button disabled={businesses.length === 0} onClick={handleExportToExcel} className="px-2 md:px-3 py-2 md:py-1.5 rounded-lg text-xs font-semibold border bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700 flex items-center justify-center gap-1">
+                                    <span className="md:hidden"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg></span>
+                                    <span className="hidden md:inline">Export</span>
                                 </button>
-                                <button onClick={handleImportClick} className="flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold border bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700">
-                                    Import
+                                <button onClick={handleImportClick} className="px-2 md:px-3 py-2 md:py-1.5 rounded-lg text-xs font-semibold border bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700 flex items-center justify-center gap-1">
+                                    <span className="md:hidden"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m-4-4v12" /></svg></span>
+                                    <span className="hidden md:inline">Import</span>
                                 </button>
                                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".xlsx, .xls" className="hidden" />
                             </>
                         ) : (
-                            <button disabled={selectedIds.length === 0} onClick={() => setShowRegisterModal(true)} className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-semibold transition-all border ${selectedIds.length > 0 ? 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500 shadow-lg shadow-emerald-900/20' : 'bg-zinc-800 text-zinc-500 border-zinc-700 cursor-not-allowed'}`}>
+                            <button disabled={selectedIds.length === 0} onClick={() => setShowRegisterModal(true)} className={`w-full md:w-auto px-6 py-2 rounded-lg text-sm font-semibold transition-all border ${selectedIds.length > 0 ? 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500 shadow-lg shadow-emerald-900/20' : 'bg-zinc-800 text-zinc-500 border-zinc-700 cursor-not-allowed'}`}>
                                 Register Selection ({selectedIds.length})
                             </button>
                         )}
