@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 
-const AddBusinessModal = ({ onClose, onAdded }) => {
+const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = false }) => {
   const [formData, setFormData] = useState({
     category: 'Computer & IT Softwares',
     phoneNumbers: [''], // Array for dynamic inputs
@@ -18,6 +18,16 @@ const AddBusinessModal = ({ onClose, onAdded }) => {
     country: '',
     registered: false
   });
+
+  useEffect(() => {
+    if (isEditMode && initialData) {
+        setFormData({
+            ...initialData,
+            // Ensure phoneNumbers is an array
+            phoneNumbers: initialData.phoneNumbers && initialData.phoneNumbers.length > 0 ? initialData.phoneNumbers : ['']
+        });
+    }
+  }, [initialData, isEditMode]);
 
   const categoryOptions = [
     'Computer & IT Softwares', 'Electronics', 'Electricals', 
@@ -99,12 +109,19 @@ const AddBusinessModal = ({ onClose, onAdded }) => {
           phoneNumbers: phones
       };
 
-      await api.addBusiness(payload);
+      if (isEditMode) {
+          await api.updateBusiness(initialData._id, payload);
+          alert('Business updated successfully');
+      } else {
+          await api.addBusiness(payload);
+          alert('Business added successfully');
+      }
+      
       onAdded();
       onClose();
     } catch (err) {
       console.error(err);
-      alert('Failed to add business');
+      alert(isEditMode ? 'Failed to update business' : 'Failed to add business');
     }
   };
 
@@ -115,7 +132,7 @@ const AddBusinessModal = ({ onClose, onAdded }) => {
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-zinc-900 rounded-xl shadow-2xl w-full max-w-2xl border border-zinc-800 flex flex-col max-h-[90vh]">
         <div className="p-6 border-b border-zinc-800">
-            <h2 className="text-2xl font-light tracking-tight text-white">Add New Business</h2>
+            <h2 className="text-2xl font-light tracking-tight text-white">{isEditMode ? 'Edit Business' : 'Add New Business'}</h2>
         </div>
         
         <div className="p-6 overflow-y-auto custom-scrollbar">

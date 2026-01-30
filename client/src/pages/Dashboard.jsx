@@ -239,6 +239,14 @@ const Dashboard = () => {
                 </button>) : null}
                 
                 <button 
+                    onClick={() => fetchBusinesses()}
+                    className="text-zinc-500 hover:text-white transition-colors text-sm font-medium flex items-center gap-2"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+                    Refresh
+                </button>
+                
+                <button 
                     onClick={handleLogout}
                     className="text-zinc-500 hover:text-white transition-colors text-sm font-medium"
                 >
@@ -303,18 +311,6 @@ const Dashboard = () => {
                                     }`}
                                 >
                                     Assign ({selectedIds.length})
-                                </button>
-                                
-                                <button 
-                                    disabled={selectedIds.length === 0}
-                                    onClick={() => {}}
-                                    className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                                        selectedIds.length > 0 
-                                        ? 'bg-zinc-800 text-zinc-200 border-zinc-700 hover:bg-zinc-700 hover:text-white' 
-                                        : 'bg-zinc-800/50 text-zinc-600 border-zinc-800 cursor-not-allowed'
-                                    }`}
-                                >
-                                    Edit ({selectedIds.length})
                                 </button>
 
                                 <button 

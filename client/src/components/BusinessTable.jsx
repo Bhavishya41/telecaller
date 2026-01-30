@@ -1,8 +1,16 @@
 import React from 'react';
 import BusinessCard from './BusinessCard';
+import { useNavigate } from 'react-router-dom';
 
 const BusinessTable = ({ businesses, selectedIds, onToggleSelect, onToggleAll }) => {
   const isAllSelected = businesses.length > 0 && selectedIds.length === businesses.length;
+  const navigate = useNavigate();
+
+  const handleRowClick = (e, id) => {
+    // Prevent navigation if clicking on checkbox or actions
+    if (e.target.type === 'checkbox' || e.target.closest('input')) return;
+    navigate(`/shop/${id}`);
+  };
 
   return (
     <div className="w-full">
@@ -39,10 +47,10 @@ const BusinessTable = ({ businesses, selectedIds, onToggleSelect, onToggleAll })
       </div>
 
       {/* Desktop View: Table */}
-      <div className="hidden md:block w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-sm">
-        <div className="overflow-x-auto">
+      <div className="hidden md:block w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-sm h-[600px] flex flex-col">
+        <div className="overflow-auto custom-scrollbar flex-1 relative">
           <table className="w-full text-left text-sm text-zinc-400">
-            <thead className="bg-zinc-900/80 text-zinc-200 uppercase tracking-wider font-medium text-xs border-b border-zinc-800">
+            <thead className="bg-zinc-900/95 text-zinc-200 uppercase tracking-wider font-medium text-xs border-b border-zinc-800 sticky top-0 z-20">
               <tr>
                 <th className="p-4 w-10">
                   <input 
@@ -52,6 +60,7 @@ const BusinessTable = ({ businesses, selectedIds, onToggleSelect, onToggleAll })
                       className="appearance-none w-5 h-5 border border-zinc-600 rounded-full bg-transparent checked:bg-zinc-500 checked:border-zinc-500 cursor-pointer transition-all relative"
                   />
                 </th>
+                <th className="p-4 w-16 text-center">S.No</th>
                 <th className="p-4">Business Details</th>
                 <th className="p-4">Owner Info</th>
                 <th className="p-4">Contact</th>
@@ -62,20 +71,24 @@ const BusinessTable = ({ businesses, selectedIds, onToggleSelect, onToggleAll })
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/50">
-              {businesses.map((biz) => {
+              {businesses.map((biz, index) => {
                 const isSelected = selectedIds.includes(biz._id);
                 return (
                   <tr 
                       key={biz._id} 
-                      className={`hover:bg-zinc-900/40 transition-colors ${isSelected ? 'bg-zinc-900/60' : ''}`}
+                      onClick={(e) => handleRowClick(e, biz._id)}
+                      className={`hover:bg-zinc-900/60 transition-colors cursor-pointer ${isSelected ? 'bg-zinc-900/60' : ''}`}
                   >
-                    <td className="p-4">
+                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
                       <input 
                           type="checkbox" 
                           checked={isSelected}
                           onChange={() => onToggleSelect(biz._id)}
                           className="appearance-none w-5 h-5 border border-zinc-600 rounded-full bg-transparent checked:bg-zinc-500 checked:border-zinc-500 cursor-pointer transition-all relative"
                       />
+                    </td>
+                    <td className="p-4 text-center font-mono opacity-50">
+                        {index + 1}
                     </td>
                     <td className="p-4">
                       <div className="font-medium text-white text-base">{biz.businessName}</div>
@@ -97,7 +110,7 @@ const BusinessTable = ({ businesses, selectedIds, onToggleSelect, onToggleAll })
                               <span className="text-xs text-zinc-600">+{biz.phoneNumbers.length - 2} more</span>
                           )}
                           {biz.website && (
-                               <a href={biz.website} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:text-blue-400 mt-1 inline-block">Visit Website</a>
+                               <a href={biz.website} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs text-blue-500 hover:text-blue-400 mt-1 inline-block">Visit Website</a>
                           )}
                       </div>
                     </td>

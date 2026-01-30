@@ -44,6 +44,16 @@ export const api = {
         return data;
     },
 
+    getBusinessById: async (id) => {
+        const response = await fetch(`${BASE_URL}/businesses/${id}`, {
+            method: 'GET',
+            headers: getHeaders(),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to fetch business details');
+        return data;
+    },
+
     addBusiness: async (businessData) => {
         const response = await fetch(`${BASE_URL}/businesses`, {
             method: 'POST',

@@ -57,6 +57,20 @@ router.get('/', async (req, res) => {
     }
 });
 
+// GET Single Business by ID
+router.get('/:id', async (req, res) => {
+    try {
+        const business = await Business.findById(req.params.id);
+        if (!business) {
+            return res.status(404).json("Business not found");
+        }
+        res.status(200).json(business);
+    } catch (err) {
+        res.status(500).json(err);
+        console.log(err);
+    }
+});
+
 // ADD Business
 router.post('/', async (req, res) => {
     try {
