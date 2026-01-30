@@ -131,6 +131,10 @@ const ShopDetailScreen = () => {
                              <label className="block text-xs text-zinc-500 uppercase tracking-wide">Country</label>
                              <div className="text-white">{business.country}</div>
                         </div>
+                         <div>
+                             <label className="block text-xs text-zinc-500 uppercase tracking-wide">District</label>
+                             <div className="text-white">{business.district}</div>
+                        </div>
                     </div>
                     <div>
                         <label className="block text-xs text-zinc-500 uppercase tracking-wide">Website</label>
