@@ -33,6 +33,16 @@ router.get('/', async (req, res) => {
         } else {
             // 2. Admin/Filter Logic
             let query = {};
+
+            // Search Logic (Name or Phone)
+            const { search } = req.query;
+            if (search) {
+                query.$or = [
+                    { businessName: { $regex: search, $options: 'i' } },
+                    { phoneNumbers: { $regex: search, $options: 'i' } }
+                ];
+            }
+
             if (city) query.city = { $regex: city, $options: 'i' };
             if (state) query.state = { $regex: state, $options: 'i' };
             if (category && category !== 'All') query.category = category;

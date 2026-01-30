@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import BusinessTable from '../components/BusinessTable';
 import AddBusinessModal from '../components/AddBusinessModal';
 import AssignStaffModal from '../components/AssignStaffModal';
@@ -25,6 +25,10 @@ const Dashboard = () => {
       registered: 'All'
   });
 
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const fileInputRef = useRef(null);
+
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
     setUser(userData);
@@ -33,9 +37,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Check for Shift + N
       if (e.shiftKey && (e.key === 'N' || e.key === 'n')) {
-        // Prevent triggering if user is typing in an input/textarea
         const tagName = document.activeElement.tagName.toLowerCase();
         if (tagName === 'input' || tagName === 'textarea' || document.activeElement.isContentEditable) {
             return;
@@ -55,27 +57,27 @@ const Dashboard = () => {
   const handleFilterChange = (e) => {
       const newFilters = { ...filters, [e.target.name]: e.target.value };
       setFilters(newFilters);
-      fetchBusinesses(user, newFilters);
+      fetchBusinesses(user, newFilters, searchTerm);
   };
 
-  const fetchBusinesses = async (currentUser = user, currentFilters = filters) => {
+  const fetchBusinesses = async (currentUser = user, currentFilters = filters, search = searchTerm) => {
     try {
+        setLoading(true);
         let params = {};
         
         if (currentUser.role === 'admin') {
             params = { ...currentFilters };
-            // Remove 'All' or empty values
             if (params.category === 'All') delete params.category;
             if (params.type === 'All') delete params.type;
             if (params.registered === 'All') delete params.registered;
+            if (search) params.search = search;
         } else {
-            // Staff view: only show assigned businesses
             params = { assignedTo: currentUser._id || currentUser.id };
         }
         
         const data = await api.getBusinesses(params);
         setBusinesses(data);
-        setSelectedIds([]); // Reset selection on new fetch
+        setSelectedIds([]); 
     } catch (err) {
         console.error(err);
     } finally {
@@ -89,7 +91,6 @@ const Dashboard = () => {
       window.location.href = '/auth';
   };
 
-  // Selection Logic
   const toggleSelect = (id) => {
       setSelectedIds(prev => 
           prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
@@ -109,41 +110,30 @@ const Dashboard = () => {
 
   const handleDelete = async () => {
     if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} business(es)?`)) return;
-
     try {
         setLoading(true);
-        // Execute deletions in parallel
         await Promise.all(selectedIds.map(id => api.deleteBusiness(id)));
-        
-        await fetchBusinesses(); // Refresh list
-        setSelectedIds([]); // Clear selection
+        await fetchBusinesses();
+        setSelectedIds([]);
         alert("Operations completed successfully.");
     } catch (err) {
-        console.error(err);
         alert("Some items could not be deleted.");
     } finally {
         setLoading(false);
     }
   };
 
-  const handleRegisterClick = () => {
-    setShowRegisterModal(true);
-  };
-
   const handleConfirmRegister = async (followupMessage) => {
     try {
         setLoading(true);
-        // Execute updates in parallel
         await Promise.all(selectedIds.map(id => api.updateBusiness(id, { 
             registered: true,
             followup: followupMessage
         })));
-        
-        await fetchBusinesses(); // Refresh list
-        setSelectedIds([]); // Clear selection
+        await fetchBusinesses();
+        setSelectedIds([]);
         alert("Businesses marked as registered successfully.");
     } catch (err) {
-        console.error(err);
         alert("Failed to update status.");
     } finally {
         setLoading(false);
@@ -151,56 +141,36 @@ const Dashboard = () => {
   };
 
   const handleExportToExcel = () => {
-    if (businesses.length === 0) {
-        alert("No businesses to export.");
-        return;
-    }
+    if (businesses.length === 0) return alert("No businesses to export.");
     const ws = XLSX.utils.json_to_sheet(businesses);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Businesses");
     XLSX.writeFile(wb, "businesses.xlsx");
   };
 
-  const fileInputRef = React.useRef(null);
-
-  const handleImportClick = () => {
-    if (fileInputRef.current) {
-        fileInputRef.current.click();
-    }
-  };
+  const handleImportClick = () => fileInputRef.current?.click();
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = async (evt) => {
         try {
             const bstr = evt.target.result;
             const wb = XLSX.read(bstr, { type: 'binary' });
-            const wsname = wb.SheetNames[0];
-            const ws = wb.Sheets[wsname];
-            const data = XLSX.utils.sheet_to_json(ws);
+            const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
             
-            if (data.length === 0) {
-                alert("No data found in the file.");
-                return;
-            }
+            if (data.length === 0) return alert("No data found.");
 
-            // Transformation to match Schema
             const formattedData = data.map(item => ({
                 ...item,
                 phoneNumbers: item.phoneNumbers ? String(item.phoneNumbers).split(',').map(p => p.trim()) : [],
-                // Ensure required fields are at least present as empty strings if missing (backend validation will still apply)
                 businessName: item.businessName || "Unknown",
                 ownerName: item.ownerName || "Unknown",
                 email: item.email || "noemail@provided.com",
                 pincode: String(item.pincode || ""),
                 category: item.category || "Other",
                 type: item.type || "Retailer",
-                address: item.address || "",
-                city: item.city || "",
-                state: item.state || "",
                 country: item.country || "India"
             }));
 
@@ -209,211 +179,166 @@ const Dashboard = () => {
             alert(`Successfully imported ${formattedData.length} businesses`);
             await fetchBusinesses();
         } catch (err) {
-            console.error(err);
-            alert("Failed to import businesses. Check console for details.");
+            alert("Import failed.");
         } finally {
             setLoading(false);
-            if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
     reader.readAsBinaryString(file);
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <nav className="bg-zinc-900/50 backdrop-blur-md border-b border-zinc-800 sticky top-0 z-10">
+    <div className="h-screen bg-black text-white flex flex-col overflow-hidden">
+      {/* Navigation - Fixed Height */}
+      <nav className="bg-zinc-900/50 backdrop-blur-md border-b border-zinc-800 shrink-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <h1 className="text-2xl font-light tracking-tight text-white">
-                TeleConnect {user.role === 'admin' && <span className="text-xs bg-red-900/50 text-red-200 px-2 py-0.5 rounded border border-red-900 ml-2">ADMIN</span>}
+            <h1 className="text-2xl font-light tracking-tight">
+                TeleConnect {user.role === 'admin' && <span className="text-[10px] bg-red-900/50 text-red-200 px-2 py-0.5 rounded border border-red-900 ml-2 align-middle">ADMIN</span>}
             </h1>
             <div className="flex items-center gap-6">
-                <span className="text-zinc-400 hidden md:flex items-center gap-2 text-sm">
+                <span className="text-zinc-400 hidden md:block text-sm">
                     Hello, <b className="text-white font-medium">{user.name}</b>
                 </span>
-                {user.role === "admin" ? (<button 
-                    onClick={() => setShowModal(true)}
-                    className="bg-white text-black hover:bg-zinc-200 px-5 py-2 rounded-lg transition-all duration-200 shadow-lg shadow-white/5 flex items-center gap-2 font-medium text-sm"
-                >
-                    <span className="text-lg leading-none">+</span> Add Business
-                </button>) : null}
-                
-                <button 
-                    onClick={() => fetchBusinesses()}
-                    className="text-zinc-500 hover:text-white transition-colors text-sm font-medium flex items-center gap-2"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+                {user.role === "admin" && (
+                    <button onClick={() => setShowModal(true)} className="bg-white text-black hover:bg-zinc-200 px-4 py-2 rounded-lg transition-all text-sm font-semibold flex items-center gap-2">
+                        + Add Business
+                    </button>
+                )}
+                <button onClick={() => fetchBusinesses()} className="text-zinc-500 hover:text-white transition-colors text-sm font-medium flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     Refresh
                 </button>
-                
-                <button 
-                    onClick={handleLogout}
-                    className="text-zinc-500 hover:text-white transition-colors text-sm font-medium"
-                >
-                    Logout
-                </button>
+                <button onClick={handleLogout} className="text-zinc-500 hover:text-white transition-colors text-sm font-medium">Logout</button>
             </div>
         </div>
       </nav>
       
-      {/* Content */}
-      <main className="max-w-7xl mx-auto p-6 md:p-8">
-          <div className="mb-8 space-y-4">
+      {/* Main Content Area - Constrained to prevent page scroll */}
+      <main className="flex-1 flex flex-col min-h-0 w-full max-w-7xl mx-auto p-4 md:p-6">
+          
+          {/* Header & Filters Section - Stays at top */}
+          <div className="shrink-0 space-y-4 mb-4">
               {user.role === 'admin' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 mb-6">
-                        <input name="city" placeholder="Filter by City" value={filters.city} onChange={handleFilterChange} className="p-2.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm outline-none focus:border-zinc-600" />
-                        <input name="state" placeholder="Filter by State" value={filters.state} onChange={handleFilterChange} className="p-2.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm outline-none focus:border-zinc-600" />
-                        <select name="category" value={filters.category} onChange={handleFilterChange} className="p-2.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm outline-none focus:border-zinc-600">
-                            {categoryOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                        <select name="type" value={filters.type} onChange={handleFilterChange} className="p-2.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm outline-none focus:border-zinc-600">
-                            {typeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                        <select name="registered" value={filters.registered || 'All'} onChange={handleFilterChange} className="p-2.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm outline-none focus:border-zinc-600">
-                            <option value="All">All Status</option>
-                            <option value="true">Registered</option>
-                            <option value="false">Not Registered</option>
-                        </select>
+                    <div className="flex flex-col gap-3">
+                        <div className="flex gap-2 mb-1">
+                            <div className="relative flex-1">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    placeholder="Search by Name or Phone..." 
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && fetchBusinesses(user, filters, searchTerm)}
+                                    className="w-full pl-9 pr-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-zinc-600"
+                                />
+                            </div>
+                            <button 
+                                onClick={() => fetchBusinesses(user, filters, searchTerm)}
+                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-indigo-900/20"
+                            >
+                                Search
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 bg-zinc-900/90 p-4 rounded-xl border border-zinc-800 shadow-xl">
+                            <input name="city" placeholder="City" value={filters.city} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm focus:border-zinc-600 outline-none" />
+                            <input name="state" placeholder="State" value={filters.state} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm focus:border-zinc-600 outline-none" />
+                            <select name="category" value={filters.category} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm outline-none">
+                                {categoryOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            </select>
+                            <select name="type" value={filters.type} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm outline-none">
+                                {typeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            </select>
+                            <select name="registered" value={filters.registered} onChange={handleFilterChange} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-sm outline-none">
+                                <option value="All">All Status</option>
+                                <option value="true">Registered</option>
+                                <option value="false">Unregistered</option>
+                            </select>
+                        </div>
                     </div>
               ) : (
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl text-zinc-400 font-light">Assignments in your area</h2>
-                    <span className="font-mono bg-zinc-900 border border-zinc-800 px-3 py-1 rounded text-sm text-zinc-300 shadow-sm">{user.pincode}</span>
+                <div className="flex items-center justify-between">
+                    <h2 className="text-xl text-zinc-400 font-light">Assignments for <span className="text-white font-normal">{user.pincode}</span></h2>
                 </div>
               )}
 
-                {/* Persistent Action Bar */}
-                <div className="flex flex-col md:flex-row items-center justify-between bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 mb-6 gap-4">
-                    <div className="flex items-center gap-4 w-full md:w-auto">
-                        <h3 className="text-zinc-400 font-medium text-sm">
-                            {selectedIds.length === 0 ? 'No selection' : `${selectedIds.length} selected`}
-                        </h3>
+                {/* Bulk Actions Bar */}
+                <div className="flex flex-col md:flex-row items-center justify-between bg-zinc-900/40 p-3 rounded-xl border border-zinc-800/60 gap-4">
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm text-zinc-400">
+                            <b className="text-zinc-100">{businesses.length}</b> items
+                        </span>
                         {selectedIds.length > 0 && (
-                            <button 
-                                onClick={() => setSelectedIds([])}
-                                className="text-xs text-zinc-500 hover:text-white underline decoration-zinc-700 hover:decoration-white transition-all"
-                            >
-                                Clear Selection
-                            </button>
+                            <>
+                                <span className="w-1 h-1 rounded-full bg-zinc-700"></span>
+                                <span className="text-sm text-indigo-400 font-medium">{selectedIds.length} selected</span>
+                                <button onClick={() => setSelectedIds([])} className="text-xs text-zinc-500 hover:text-white underline ml-1">Clear</button>
+                            </>
                         )}
                     </div>
 
-                    <div className="flex items-center gap-2 w-full md:w-auto">
+                    <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                         {user.role === 'admin' ? (
                             <>
-                                <button 
-                                    disabled={selectedIds.length === 0}
-                                    onClick={() => setShowAssignModal(true)} 
-                                    className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                                        selectedIds.length > 0 
-                                        ? 'bg-indigo-600/10 text-indigo-400 border-indigo-600/20 hover:bg-indigo-600/20 hover:border-indigo-600/50' 
-                                        : 'bg-zinc-800/50 text-zinc-600 border-zinc-800 cursor-not-allowed'
-                                    }`}
-                                >
-                                    Assign ({selectedIds.length})
+                                <button disabled={selectedIds.length === 0} onClick={() => setShowAssignModal(true)} className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${selectedIds.length > 0 ? 'bg-indigo-600/10 text-indigo-400 border-indigo-600/30 hover:bg-indigo-600/20' : 'opacity-30 cursor-not-allowed'}`}>
+                                    Assign
                                 </button>
-
-                                <button 
-                                    disabled={selectedIds.length === 0}
-                                    onClick={handleDelete}
-                                    className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                                        selectedIds.length > 0 
-                                        ? 'bg-red-900/20 text-red-500 border-red-900/30 hover:bg-red-900/30 hover:border-red-900/50' 
-                                        : 'bg-zinc-800/50 text-zinc-600 border-zinc-800 cursor-not-allowed'
-                                    }`}
-                                >
-                                    Delete ({selectedIds.length})
+                                <button disabled={selectedIds.length === 0} onClick={handleDelete} className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${selectedIds.length > 0 ? 'bg-red-900/10 text-red-500 border-red-900/30 hover:bg-red-900/20' : 'opacity-30 cursor-not-allowed'}`}>
+                                    Delete
                                 </button>
-                                
-                                <button 
-                                    disabled={businesses.length === 0}
-                                    onClick={handleExportToExcel}
-                                    className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                                        businesses.length > 0 
-                                        ? 'bg-green-900/20 text-green-500 border-green-900/30 hover:bg-green-900/30 hover:border-green-900/50' 
-                                        : 'bg-zinc-800/50 text-zinc-600 border-zinc-800 cursor-not-allowed'
-                                    }`}
-                                >
-                                    Export to Excel
+                                <button disabled={businesses.length === 0} onClick={handleExportToExcel} className="flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold border bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700">
+                                    Export
                                 </button>
-
-                                <button 
-                                    onClick={handleImportClick}
-                                    className="flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border bg-blue-900/20 text-blue-500 border-blue-900/30 hover:bg-blue-900/30 hover:border-blue-900/50"
-                                >
-                                    Import from Excel
+                                <button onClick={handleImportClick} className="flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold border bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700">
+                                    Import
                                 </button>
-                                <input 
-                                    type="file" 
-                                    ref={fileInputRef} 
-                                    onChange={handleFileChange} 
-                                    accept=".xlsx, .xls" 
-                                    className="hidden" 
-                                />
+                                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".xlsx, .xls" className="hidden" />
                             </>
                         ) : (
-                            <button 
-                                disabled={selectedIds.length === 0}
-                                onClick={handleRegisterClick}
-                                className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                                    selectedIds.length > 0 
-                                    ? 'bg-emerald-900/20 text-emerald-500 border-emerald-900/30 hover:bg-emerald-900/30 hover:border-emerald-900/50' 
-                                    : 'bg-zinc-800/50 text-zinc-600 border-zinc-800 cursor-not-allowed'
-                                }`}
-                            >
-                                Register ({selectedIds.length})
+                            <button disabled={selectedIds.length === 0} onClick={() => setShowRegisterModal(true)} className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-semibold transition-all border ${selectedIds.length > 0 ? 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500 shadow-lg shadow-emerald-900/20' : 'bg-zinc-800 text-zinc-500 border-zinc-700 cursor-not-allowed'}`}>
+                                Register Selection ({selectedIds.length})
                             </button>
                         )}
                     </div>
                 </div>
           </div>
 
-          {loading ? (
-             <div className="flex justify-center py-20">
-                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-             </div>
-          ) : businesses.length === 0 ? (
-              <div className="text-center py-24 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl border-dashed">
-                  <p className="text-xl text-zinc-500 font-light">No businesses assigned to you right now</p>
-              </div>
-          ) : (
-             <BusinessTable 
-                businesses={businesses}
-                selectedIds={selectedIds}
-                onToggleSelect={toggleSelect}
-                onToggleAll={toggleSelectAll}
-             />
-          )}
+          {/* Table Container - This part scrolls */}
+          <div className="flex-1 min-h-0 relative">
+            {loading ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-10">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-white"></div>
+                        <span className="text-zinc-500 text-sm font-mono animate-pulse">Loading Database...</span>
+                    </div>
+                </div>
+            ) : businesses.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center bg-zinc-900/20 border border-zinc-800/50 rounded-2xl border-dashed">
+                    <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mb-4 border border-zinc-800">
+                        <svg className="w-8 h-8 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+                    </div>
+                    <p className="text-zinc-500 font-light text-lg">No businesses found</p>
+                    <p className="text-zinc-600 text-sm mt-1">Try adjusting your filters or adding new data.</p>
+                </div>
+            ) : (
+                <BusinessTable 
+                    businesses={businesses}
+                    selectedIds={selectedIds}
+                    onToggleSelect={toggleSelect}
+                    onToggleAll={toggleSelectAll}
+                />
+            )}
+          </div>
       </main>
 
-      {showModal && (
-          <AddBusinessModal 
-            onClose={() => setShowModal(false)} 
-            onAdded={fetchBusinesses} 
-          />
-      )}
-
-      {showAssignModal && (
-          <AssignStaffModal
-             onClose={() => setShowAssignModal(false)}
-             onAssigned={() => {
-                 fetchBusinesses();
-                 setSelectedIds([]);
-             }}
-             selectedCount={selectedIds.length}
-             businessIds={selectedIds}
-          />
-      )}
-
-      {showRegisterModal && (
-          <RegisterBusinessModal
-            onClose={() => setShowRegisterModal(false)}
-            onRegister={handleConfirmRegister}
-            selectedCount={selectedIds.length}
-          />
-      )}
+      {/* Modals */}
+      {showModal && <AddBusinessModal onClose={() => setShowModal(false)} onAdded={() => fetchBusinesses()} />}
+      {showAssignModal && <AssignStaffModal onClose={() => setShowAssignModal(false)} onAssigned={() => { fetchBusinesses(); setSelectedIds([]); }} selectedCount={selectedIds.length} businessIds={selectedIds} />}
+      {showRegisterModal && <RegisterBusinessModal onClose={() => setShowRegisterModal(false)} onRegister={handleConfirmRegister} selectedCount={selectedIds.length} />}
     </div>
   );
 };
 
-export default Dashboard;
+export default Dashboard;   

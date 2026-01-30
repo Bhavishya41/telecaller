@@ -232,7 +232,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
             
             {/* 1. Business Category */}
             <div>
-                <label className={labelClass}>Business CategoryReference</label>
                 <select 
                     ref={setRef('category')}
                     name="category" 
@@ -247,7 +246,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
 
             {/* 2. Mobile Phone Numbers */}
             <div>
-                <label className={labelClass}>Mobile Number(s)</label>
                 {formData.phoneNumbers.map((phone, index) => (
                     <div key={index} className="flex gap-2 mb-2">
                         <input 
@@ -282,7 +280,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* 3. Owner Name */}
                 <div>
-                    <label className={labelClass}>Owner Name</label>
                     <input 
                         ref={setRef('ownerName')}
                         name="ownerName" 
@@ -296,7 +293,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                 </div>
                 {/* 4. Shop Name */}
                 <div>
-                    <label className={labelClass}>Shop Name</label>
                     <input 
                         ref={setRef('businessName')}
                         name="businessName" 
@@ -313,7 +309,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* 5. Email ID */}
                 <div>
-                    <label className={labelClass}>E-Mail ID</label>
                     <input 
                         ref={setRef('email')}
                         name="email" 
@@ -328,7 +323,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                 </div>
                 {/* 6. Business Type */}
                 <div>
-                    <label className={labelClass}>Business Type</label>
                     <select 
                         ref={setRef('type')}
                         name="type" 
@@ -344,7 +338,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
 
             {/* 7. Website URL */}
             <div>
-                <label className={labelClass}>Website URL</label>
                 <input 
                     ref={setRef('website')}
                     name="website" 
@@ -359,7 +352,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
 
             {/* 8. Address */}
             <div>
-                <label className={labelClass}>Address</label>
                 <textarea 
                     ref={setRef('address')}
                     name="address" 
@@ -376,7 +368,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {/* 9. Area Pin Code */}
                 <div>
-                    <label className={labelClass}>Area Pin Code</label>
                     <input 
                         ref={setRef('pincode')}
                         name="pincode" 
@@ -395,7 +386,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                 </div>
                 {/* 10. City */}
                 <div>
-                    <label className={labelClass}>City</label>
                     <input 
                         ref={setRef('city')}
                         name="city" 
@@ -409,7 +399,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                 </div>
                 {/* 11. District */}
                 <div>
-                    <label className={labelClass}>District</label>
                     <input 
                         ref={setRef('district')}
                         name="district" 
@@ -425,7 +414,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
             <div className="grid grid-cols-2 gap-4">
                 {/* 12. State */}
                 <div>
-                    <label className={labelClass}>State</label>
                     <input 
                         ref={setRef('state')}
                         name="state" 
@@ -439,7 +427,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                 </div>
                 {/* 13. Country */}
                 <div>
-                    <label className={labelClass}>Country</label>
                     <input 
                         ref={setRef('country')}
                         name="country" 
