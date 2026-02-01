@@ -26,8 +26,8 @@ const BusinessSchema = new mongoose.Schema({
         required: false, // e.g., IT, electronics, automobile
     },
     type: {
-        type: String, // e.g., retailer, wholesaler, distributor
-        required: false,
+        type: [String], // e.g., ['Retailer', 'Wholesaler']
+        default: [],
     },
     website: {
         type: String,

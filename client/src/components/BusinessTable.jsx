@@ -87,7 +87,9 @@ const BusinessTable = ({ businesses, selectedIds, onToggleSelect, onToggleAll })
                     <td className="p-4">
                       <div className="font-medium text-white text-base truncate max-w-[200px]">{biz.businessName}</div>
                       <div className="flex flex-wrap gap-2 mt-1">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">{biz.type}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">
+                          {Array.isArray(biz.type) ? biz.type.join(', ') : biz.type}
+                        </span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800/50 text-zinc-400 border border-zinc-800">{biz.category}</span>
                       </div>
                     </td>

@@ -8,7 +8,7 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
     ownerName: '',
     businessName: '', // Shop Name
     email: '',
-    type: 'Retailer',
+    type: ['Retailer'], // Changed to array
     website: '',
     address: '',
     pincode: '',
@@ -19,15 +19,39 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
     registered: false
   });
 
+  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+  const typeDropdownRef = useRef(null);
+
   const fieldRefs = useRef({});
   const saveBtnRef = useRef(null);
 
   useEffect(() => {
+    // Close dropdown when clicking outside
+    const handleClickOutside = (event) => {
+        if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target)) {
+            setIsTypeDropdownOpen(false);
+        }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
     if (isEditMode && initialData) {
+        let normalizedType = [];
+        if (Array.isArray(initialData.type)) {
+            normalizedType = initialData.type;
+        } else if (typeof initialData.type === 'string') {
+            normalizedType = [initialData.type];
+        }
+
         setFormData({
             ...initialData,
             // Ensure phoneNumbers is an array
-            phoneNumbers: initialData.phoneNumbers && initialData.phoneNumbers.length > 0 ? initialData.phoneNumbers : ['']
+            phoneNumbers: initialData.phoneNumbers && initialData.phoneNumbers.length > 0 ? initialData.phoneNumbers : [''],
+            type: normalizedType.length > 0 ? normalizedType : ['Retailer']
         });
     }
   }, [initialData, isEditMode]);
@@ -69,6 +93,17 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleTypeChange = (option) => {
+      setFormData(prev => {
+          const currentTypes = prev.type;
+          if (currentTypes.includes(option)) {
+              return { ...prev, type: currentTypes.filter(t => t !== option) };
+          } else {
+              return { ...prev, type: [...currentTypes, option] };
+          }
+      });
   };
 
   // Handler for phone number changes
@@ -223,6 +258,10 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
       // Also maintain array refs for phones if needed, but handled dynamically below
   };
 
+  const toggleTypeDropdown = () => {
+      setIsTypeDropdownOpen(!isTypeDropdownOpen);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-zinc-900 rounded-xl shadow-2xl w-full max-w-2xl border border-zinc-800 flex flex-col max-h-[90vh]">
@@ -321,18 +360,40 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                     />
                 </div>
                 {/* 6. Business Type */}
-                <div>
-                    <select 
-                        ref={setRef('type')}
-                        name="type" 
-                        value={formData.type} 
-                        onChange={handleChange} 
-                        onKeyDown={(e) => handleKeyDown(e, 'website')}
-                        className={inputClass}
-                    >
-                        {typeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                    </select>
+            {/* 6. Business Type (Multi-select) */}
+            <div className="relative" ref={typeDropdownRef}>
+                <label className={labelClass}>Business Type</label>
+                <div 
+                    className={`${inputClass} cursor-pointer flex items-center justify-between`}
+                    onClick={toggleTypeDropdown}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') toggleTypeDropdown();
+                        if (e.key === 'Tab' && !isTypeDropdownOpen) handleKeyDown(e, 'website');
+                    }}
+                >
+                    <span className={formData.type.length === 0 ? "text-zinc-600" : "text-white"}>
+                        {formData.type.length > 0 ? formData.type.join(', ') : 'Select Type'}
+                    </span>
+                    <span className="text-zinc-400">▼</span>
                 </div>
+                
+                {isTypeDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                        {typeOptions.map(opt => (
+                            <label key={opt} className="flex items-center gap-3 p-3 hover:bg-zinc-800 cursor-pointer transition-colors">
+                                <input 
+                                    type="checkbox" 
+                                    checked={formData.type.includes(opt)}
+                                    onChange={() => handleTypeChange(opt)}
+                                    className="w-4 h-4 accent-white rounded bg-zinc-800 border-zinc-600"
+                                />
+                                <span className="text-zinc-300 text-sm">{opt}</span>
+                            </label>
+                        ))}
+                    </div>
+                )}
+            </div>
             </div>
 
             {/* 7. Website URL */}
