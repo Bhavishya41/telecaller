@@ -127,16 +127,20 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     try {
-      // 1. Validate Phone Numbers
-      const phones = formData.phoneNumbers;
+      // Filter out empty phone numbers
+      const phones = formData.phoneNumbers.filter(p => p.trim() !== '');
       
-      // Check for empty fields
-      if (phones.some(p => p.trim() === '')) {
-          alert("One or more mobile number fields are empty. Please fill or remove them.");
+      // Check if at least one field is filled
+      const textFields = ['ownerName', 'businessName', 'email', 'website', 'address', 'pincode', 'city', 'district', 'state', 'country'];
+      const isAnyTextFieldFilled = textFields.some(field => formData[field]?.trim() !== '');
+      const isAnyPhoneFilled = phones.length > 0;
+
+      if (!isAnyTextFieldFilled && !isAnyPhoneFilled) {
+          alert("Please fill at least one field to add a business.");
           return;
       }
-      
-      // Check for 10 digits
+
+      // 1. Validate Phone Numbers (Only if provided)
       const phoneRegex = /^[0-9]{10}$/;
       for (let phone of phones) {
           if (!phoneRegex.test(phone)) {
@@ -145,23 +149,22 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
           }
       }
 
-      if (phones.length === 0) {
-          alert("Please add at least one mobile number");
-          return;
+      // 2. Validate Pincode (Only if provided)
+      if (formData.pincode && formData.pincode.trim() !== '') {
+          const pincodeRegex = /^[0-9]{6}$/;
+          if (!pincodeRegex.test(formData.pincode)) {
+              alert("Invalid Pincode. Must be exactly 6 digits.");
+              return;
+          }
       }
 
-      // 2. Validate Pincode (Must be 6 digits)
-      const pincodeRegex = /^[0-9]{6}$/;
-      if (!pincodeRegex.test(formData.pincode)) {
-          alert("Invalid Pincode. Must be exactly 6 digits.");
-          return;
-      }
-
-      // 3. Validate Email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-          alert("Invalid Email Address.");
-          return;
+      // 3. Validate Email (Only if provided)
+      if (formData.email && formData.email.trim() !== '') {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(formData.email)) {
+              alert("Invalid Email Address.");
+              return;
+          }
       }
 
       const payload = {
@@ -197,10 +200,10 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
             registered: false
           });
           
-          // Focus business name specifically as requested
+          // Focus mobile number specifically as requested
           setTimeout(() => {
-              if (fieldRefs.current['businessName']) {
-                  fieldRefs.current['businessName'].focus();
+              if (fieldRefs.current['phone_0']) {
+                  fieldRefs.current['phone_0'].focus();
               }
           }, 0);
       }
@@ -266,7 +269,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                                 handleKeyDown(e, nextKey);
                             }}
                             className={inputClass} 
-                            required={index === 0}
                         />
                         {index === formData.phoneNumbers.length - 1 ? (
                             <button type="button" onClick={addPhoneField} tabIndex={-1} className="px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">+</button>
@@ -288,7 +290,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                         onChange={handleChange} 
                         onKeyDown={(e) => handleKeyDown(e, 'businessName')}
                         className={inputClass} 
-                        required 
                     />
                 </div>
                 {/* 4. Shop Name */}
@@ -301,7 +302,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                         onChange={handleChange} 
                         onKeyDown={(e) => handleKeyDown(e, 'email')}
                         className={inputClass} 
-                        required 
                     />
                 </div>
             </div>
@@ -318,7 +318,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                         onChange={handleChange} 
                         onKeyDown={(e) => handleKeyDown(e, 'type')}
                         className={inputClass} 
-                        required 
                     />
                 </div>
                 {/* 6. Business Type */}
@@ -346,7 +345,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                     onChange={handleChange} 
                     onKeyDown={(e) => handleKeyDown(e, 'address')}
                     className={inputClass} 
-                    required 
                 />
             </div>
 
@@ -361,7 +359,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                     onChange={handleChange} 
                     onKeyDown={(e) => handleKeyDown(e, 'pincode')}
                     className={inputClass} 
-                    required 
                 />
             </div>
 
@@ -381,7 +378,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                         }}
                         onKeyDown={(e) => handleKeyDown(e, 'city')}
                         className={inputClass} 
-                        required 
                     />
                 </div>
                 {/* 10. City */}
@@ -394,7 +390,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                         onChange={handleChange} 
                         onKeyDown={(e) => handleKeyDown(e, 'district')}
                         className={inputClass} 
-                        required 
                     />
                 </div>
                 {/* 11. District */}
@@ -422,7 +417,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                         onChange={handleChange} 
                         onKeyDown={(e) => handleKeyDown(e, 'country')}
                         className={inputClass} 
-                        required 
                     />
                 </div>
                 {/* 13. Country */}
@@ -435,7 +429,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                         onChange={handleChange} 
                         onKeyDown={(e) => handleKeyDown(e, 'registered')}
                         className={inputClass} 
-                        required 
                     />
                 </div>
             </div>

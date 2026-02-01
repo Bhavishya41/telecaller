@@ -3,31 +3,31 @@ const mongoose = require('mongoose');
 const BusinessSchema = new mongoose.Schema({
     businessName: {
         type: String,
-        required: true,
+        required: false,
     },
     ownerName: {
         type: String,
-        required: true,
+        required: false,
     },
     email: {
         type: String,
-        required: true,
+        required: false,
     },
     phoneNumbers: {
         type: [String], // Array of strings for multiple numbers
-        required: true,
+        required: false,
     },
     pincode: {
         type: String,
-        required: true,
+        required: false,
     },
     category: {
         type: String,
-        required: true, // e.g., IT, electronics, automobile
+        required: false, // e.g., IT, electronics, automobile
     },
     type: {
         type: String, // e.g., retailer, wholesaler, distributor
-        required: true,
+        required: false,
     },
     website: {
         type: String,
@@ -35,11 +35,11 @@ const BusinessSchema = new mongoose.Schema({
     },
     address: {
         type: String,
-        required: true
+        required: false
     },
     city: {
         type: String,
-        required: true
+        required: false
     },
     district: {
         type: String,
@@ -47,11 +47,11 @@ const BusinessSchema = new mongoose.Schema({
     },
     state: {
         type: String,
-        required: true
+        required: false
     },
     country: {
         type: String,
-        required: true
+        required: false
     },
     registered: {
         type: Boolean,
