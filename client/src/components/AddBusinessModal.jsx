@@ -362,7 +362,6 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
                 {/* 6. Business Type */}
             {/* 6. Business Type (Multi-select) */}
             <div className="relative" ref={typeDropdownRef}>
-                <label className={labelClass}>Business Type</label>
                 <div 
                     className={`${inputClass} cursor-pointer flex items-center justify-between`}
                     onClick={toggleTypeDropdown}
