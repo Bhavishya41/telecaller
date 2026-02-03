@@ -3,7 +3,10 @@ import { api } from '../api';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+<<<<<<< HEAD
   const [showPassword, setShowPassword] = useState(false);
+=======
+>>>>>>> fa73c4967d4792ef913f73cd889b4fd852d7163f
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -91,6 +94,7 @@ const Auth = () => {
             className="w-full p-3 rounded-lg bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 focus:ring-1 focus:ring-white focus:border-white outline-none transition duration-200"
             required
           />
+<<<<<<< HEAD
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
@@ -113,6 +117,17 @@ const Auth = () => {
               )}
             </button>
           </div>
+=======
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            className="w-full p-3 rounded-lg bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 focus:ring-1 focus:ring-white focus:border-white outline-none transition duration-200"
+            required
+          />
+>>>>>>> fa73c4967d4792ef913f73cd889b4fd852d7163f
 
           <button
             type="submit"
