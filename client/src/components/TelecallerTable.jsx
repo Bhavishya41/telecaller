@@ -78,12 +78,34 @@ const TelecallerTable = ({ staff, isAdmin }) => {
                             <div className="space-y-4">
                                 <div>
                                     <h4 className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">Assignments ({details[member._id]?.length})</h4>
-                                    <ul className="space-y-1">
-                                        {details[member._id]?.length === 0 && <li className="text-zinc-600 text-xs italic">No assignments</li>}
+                                    <div className="space-y-3">
+                                        {details[member._id]?.length === 0 && <p className="text-zinc-600 text-xs italic">No assignments</p>}
                                         {details[member._id]?.map(b => (
-                                            <li key={b._id} className="text-sm text-zinc-400 pl-2 border-l-2 border-zinc-700">{b.businessName}</li>
+                                            <div key={b._id} className="bg-zinc-800/40 rounded-lg p-3 border border-zinc-800">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div>
+                                                        <h5 className="text-zinc-200 text-sm font-medium">{b.businessName}</h5>
+                                                        <p className="text-zinc-500 text-xs">{b.city || "No City"}</p>
+                                                    </div>
+                                                    {b.registered ? (
+                                                        <span className="text-[10px] bg-emerald-900/40 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-900/50">REG</span>
+                                                    ) : (
+                                                        <span className="text-[10px] bg-zinc-700/40 text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-700/50">PENDING</span>
+                                                    )}
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2 text-[10px] text-zinc-500 border-t border-zinc-700/50 pt-2 mt-2">
+                                                    <div>
+                                                        <span className="block text-zinc-600 uppercase tracking-wider text-[9px]">Assigned</span>
+                                                        <span className="font-mono">{b.assignedAt ? new Date(b.assignedAt).toLocaleDateString('en-IN') : '-'}</span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="block text-zinc-600 uppercase tracking-wider text-[9px]">Registered</span>
+                                                        <span className="font-mono">{b.registeredAt ? new Date(b.registeredAt).toLocaleDateString('en-IN') : '-'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         ))}
-                                    </ul>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -150,30 +172,62 @@ const TelecallerTable = ({ staff, isAdmin }) => {
                                         </div>
                                     ) : (
                                         <div className="col-span-2">
-                                            {/* Assigned Column Only */}
+                                            {/* Date-wise Assignment Table */}
                                             <div>
                                                 <div className="flex items-center justify-between mb-4 pb-2 border-b border-zinc-800">
-                                                    <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wider">Assigned Businesses</h4>
+                                                    <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wider">Assignments Logic</h4>
                                                     <span className="text-xs bg-blue-900/30 text-blue-400 px-2 py-0.5 rounded border border-blue-900/50">
-                                                        {details[member._id]?.length || 0}
+                                                        {details[member._id]?.length || 0} Total
                                                     </span>
                                                 </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                                                     {details[member._id]?.length === 0 && (
-                                                        <p className="text-zinc-600 text-sm italic py-2 col-span-full">No assignments.</p>
-                                                    )}
-                                                    {details[member._id]?.map(b => (
-                                                        <div key={b._id} className={`p-3 rounded-lg border ${b.registered ? 'bg-emerald-900/5 border-emerald-900/20' : 'bg-zinc-800/30 border-zinc-700/50'}`}>
-                                                            <div className="flex justify-between items-start mb-1">
-                                                                <div className={`font-medium text-sm ${b.registered ? 'text-emerald-300' : 'text-zinc-300'}`}>{b.businessName}</div>
-                                                                {b.registered && <span className="text-[10px] uppercase bg-emerald-900/50 text-emerald-200 px-1.5 py-0.5 rounded">REG</span>}
-                                                            </div>
-                                                            <div className="text-zinc-500 text-xs flex flex-col gap-0.5">
-                                                                <span>{b.city || "No City"}</span>
-                                                                {b.phoneNumbers?.[0] && <span>{b.phoneNumbers[0]}</span>}
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                                
+                                                <div className="max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                                    <table className="w-full text-left text-xs text-zinc-400">
+                                                        <thead className="sticky top-0 bg-zinc-900 z-10">
+                                                            <tr>
+                                                                <th className="pb-2 font-medium text-zinc-500">Business Name</th>
+                                                                <th className="pb-2 font-medium text-zinc-500">Assigned At</th>
+                                                                <th className="pb-2 font-medium text-zinc-500">Registered At</th>
+                                                                <th className="pb-2 font-medium text-zinc-500 text-right">Status</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-zinc-800/50">
+                                                             {details[member._id]?.length === 0 && (
+                                                                <tr>
+                                                                    <td colSpan="4" className="py-4 text-center italic text-zinc-600">No assignments found.</td>
+                                                                </tr>
+                                                            )}
+                                                            {details[member._id]?.map(b => (
+                                                                <tr key={b._id} className="hover:bg-zinc-800/20 transition-colors">
+                                                                    <td className="py-2 pr-2">
+                                                                        <div className="text-zinc-300 font-medium">{b.businessName}</div>
+                                                                        <div className="text-zinc-600 text-[10px]">{b.city || "No City"}</div>
+                                                                    </td>
+                                                                    <td className="py-2 pr-2 font-mono text-zinc-500">
+                                                                        {b.assignedAt ? new Date(b.assignedAt).toLocaleString('en-IN', { 
+                                                                            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
+                                                                        }) : '-'}
+                                                                    </td>
+                                                                    <td className="py-2 pr-2 font-mono text-zinc-500">
+                                                                        {b.registeredAt ? new Date(b.registeredAt).toLocaleString('en-IN', { 
+                                                                            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
+                                                                        }) : '-'}
+                                                                    </td>
+                                                                    <td className="py-2 text-right">
+                                                                        {b.registered ? (
+                                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-900/30 text-emerald-400 border border-emerald-900/50">
+                                                                                REGISTERED
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-800 text-zinc-500 border border-zinc-700">
+                                                                                PENDING
+                                                                            </span>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
                                                 </div>
                                             </div>
                                         </div>

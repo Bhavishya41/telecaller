@@ -132,7 +132,7 @@ router.put('/assign', async (req, res) => {
 
         await Business.updateMany(
             { _id: { $in: businessIds } },
-            { $set: { assignedTo: staffId, assignmentMessage: message || "" } }
+            { $set: { assignedTo: staffId, assignmentMessage: message || "", assignedAt: new Date() } }
         );
 
         cache.flushAll();
@@ -146,9 +146,18 @@ router.put('/assign', async (req, res) => {
 // UPDATE Business
 router.put('/:id', async (req, res) => {
     try {
+        const updates = req.body;
+
+        // If marking as registered, add timestamp
+        if (updates.registered === true) {
+            updates.registeredAt = new Date();
+        } else if (updates.registered === false) {
+            updates.registeredAt = null;
+        }
+
         const updatedBusiness = await Business.findByIdAndUpdate(
             req.params.id,
-            { $set: req.body },
+            { $set: updates },
             { new: true }
         );
 

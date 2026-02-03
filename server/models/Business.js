@@ -62,6 +62,14 @@ const BusinessSchema = new mongoose.Schema({
         ref: 'Telecaller',
         default: null
     },
+    assignedAt: {
+        type: Date,
+        default: null
+    },
+    registeredAt: {
+        type: Date,
+        default: null
+    },
     assignmentMessage: {
         type: String,
         default: ""
