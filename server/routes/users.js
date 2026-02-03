@@ -32,4 +32,47 @@ router.get('/', async (req, res) => {
     }
 });
 
+// SEED Users (For dev/testing)
+router.post('/seed', async (req, res) => {
+    try {
+        // Plain text password for seeding
+        const plainPassword = "password123";
+
+        const dummyUsers = [
+            {
+                name: "Staff One",
+                email: "staff1@example.com",
+                phone: "9876543210",
+                pincode: "390001",
+                password: plainPassword,
+                role: "staff"
+            },
+            {
+                name: "Staff Two",
+                email: "staff2@example.com",
+                phone: "1122334455",
+                pincode: "410001",
+                password: plainPassword,
+                role: "staff"
+            },
+            {
+                name: "Staff Three",
+                email: "staff3@example.com",
+                phone: "5566778899",
+                pincode: "270001",
+                password: plainPassword,
+                role: "staff"
+            }
+        ];
+
+        // Clear existing staff and insert new ones
+        await Telecaller.deleteMany({ role: 'staff' });
+        await Telecaller.insertMany(dummyUsers);
+
+        res.status(200).json({ message: 'Staff seeded successfully' });
+    } catch (err) {
+        res.status(500).json(err);
+    }
+});
+
 module.exports = router;
