@@ -43,18 +43,16 @@ const Dashboard = () => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.shiftKey && (e.key === 'N' || e.key === 'n')) {
-        const tagName = document.activeElement.tagName.toLowerCase();
-        if (tagName === 'input' || tagName === 'textarea' || document.activeElement.isContentEditable) {
-            return;
-        }
+        if (e.shiftKey && (e.key === 'N' || e.key === 'n')) {
+          const tagName = document.activeElement.tagName.toLowerCase();
+          if (tagName === 'input' || tagName === 'textarea' || document.activeElement.isContentEditable) {
+              return;
+          }
 
-        if (user.role === 'admin') {
-            e.preventDefault();
-            setShowModal(true);
+          e.preventDefault();
+          setShowModal(true);
         }
-      }
-    };
+      };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);

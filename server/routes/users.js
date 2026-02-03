@@ -19,10 +19,11 @@ router.get('/', async (req, res) => {
         // Expose password as requested (INSECURE)
         const staff = await Telecaller.find({ role: 'staff' });
 
-        // Get assignment counts
+        // Get assignment and registration counts
         const staffWithAssignments = await Promise.all(staff.map(async (s) => {
-            const count = await require('../models/Business').countDocuments({ assignedTo: s._id });
-            return { ...s._doc, assignments: count };
+            const assignmentCount = await require('../models/Business').countDocuments({ assignedTo: s._id });
+            const registeredCount = await require('../models/Business').countDocuments({ assignedTo: s._id, registered: true });
+            return { ...s._doc, assignments: assignmentCount, registered: registeredCount };
         }));
 
         cache.set(cacheKey, staffWithAssignments, 60); // Cache for 60s
