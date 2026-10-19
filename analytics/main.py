@@ -28,6 +28,10 @@ class BusinessLead(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
 
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "fastapi-analytics"}
+
 @app.get("/health")
 def health_check():
     return {"status": "ok", "service": "fastapi-analytics"}
