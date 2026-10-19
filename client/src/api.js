@@ -1,121 +1,63 @@
-const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+import axios from 'axios';
 
-const getHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-        'Content-Type': 'application/json',
-        ...(token && { 'token': `Bearer ${token}` })
-    };
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+// Analytics microservice endpoint (Port 5000)
+const ANALYTICS_URL = import.meta.env.VITE_ANALYTICS_URL || 'http://localhost:5000';
+
+export const analyticsApi = {
+    getMetrics: (leads) => axios.post(`${ANALYTICS_URL}/api/analytics/metrics`, leads).then((res) => res.data),
 };
+
+const axiosInstance = axios.create({
+    baseURL: BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Request Interceptor: Injects token into headers
+axiosInstance.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.token = `Bearer ${token}`;
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
+// Response Interceptor: Unwraps response data & handles 401 redirects
+axiosInstance.interceptors.response.use(
+    (response) => response.data,
+    (error) => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/auth';
+        }
+        const message = error.response?.data?.message || error.message || 'Request failed';
+        return Promise.reject(new Error(message));
+    }
+);
 
 export const api = {
     // Auth endpoints
-    login: async (credentials) => {
-        const response = await fetch(`${BASE_URL}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(credentials),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Login failed');
-        return data;
-    },
-
-    register: async (userData) => {
-        const response = await fetch(`${BASE_URL}/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(userData),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Registration failed');
-        return data;
-    },
+    login: (credentials) => axiosInstance.post('/auth/login', credentials),
+    register: (userData) => axiosInstance.post('/auth/register', userData),
 
     // Business endpoints
-    getBusinesses: async (params) => {
-        const query = new URLSearchParams(params).toString();
-        const response = await fetch(`${BASE_URL}/businesses?${query}`, {
-            method: 'GET',
-            headers: getHeaders(),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Failed to fetch businesses');
-        return data;
-    },
-
-    getBusinessById: async (id) => {
-        const response = await fetch(`${BASE_URL}/businesses/${id}`, {
-            method: 'GET',
-            headers: getHeaders(),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Failed to fetch business details');
-        return data;
-    },
-
-    addBusiness: async (businessData) => {
-        const response = await fetch(`${BASE_URL}/businesses`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify(businessData),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Failed to add business');
-        return data;
-    },
-
-    importBusinesses: async (businesses) => {
-        const response = await fetch(`${BASE_URL}/businesses/import`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify(businesses),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Failed to import businesses');
-        return data;
-    },
-
-    updateBusiness: async (id, businessData) => {
-        const response = await fetch(`${BASE_URL}/businesses/${id}`, {
-            method: 'PUT',
-            headers: getHeaders(),
-            body: JSON.stringify(businessData),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Failed to update business');
-        return data;
-    },
-
-    deleteBusiness: async (id) => {
-        const response = await fetch(`${BASE_URL}/businesses/${id}`, {
-            method: 'DELETE',
-            headers: getHeaders(),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Failed to delete business');
-        return data;
-    },
+    getBusinesses: (params) => axiosInstance.get('/businesses', { params }),
+    getBusinessById: (id) => axiosInstance.get(`/businesses/${id}`),
+    addBusiness: (businessData) => axiosInstance.post('/businesses', businessData),
+    importBusinesses: (businesses) => axiosInstance.post('/businesses/import', businesses),
+    updateBusiness: (id, businessData) => axiosInstance.put(`/businesses/${id}`, businessData),
+    deleteBusiness: (id) => axiosInstance.delete(`/businesses/${id}`),
 
     // Staff/User endpoints
-    getStaff: async () => {
-        const response = await fetch(`${BASE_URL}/users`, {
-            method: 'GET',
-            headers: getHeaders(),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Failed to fetch staff');
-        return data;
-    },
-
-    assignBusinesses: async (payload) => {
-        const response = await fetch(`${BASE_URL}/businesses/assign`, {
-            method: 'PUT',
-            headers: getHeaders(),
-            body: JSON.stringify(payload),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Failed to assign businesses');
-        return data;
-    }
+    getStaff: () => axiosInstance.get('/users'),
+    assignBusinesses: (payload) => axiosInstance.put('/businesses/assign', payload),
 };
+
+export default api;

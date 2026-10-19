@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import { useDispatch } from 'react-redux';
+import { setCredentials } from '../store/authSlice';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,6 +16,9 @@ const Auth = () => {
   });
   const [error, setError] = useState(null);
 
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -25,9 +31,8 @@ const Auth = () => {
       let data;
       if (isLogin) {
         data = await api.login(formData);
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data)); // Data now includes role from backend
-        window.location.href = '/dashboard';
+        dispatch(setCredentials({ user: data, token: data.token }));
+        navigate('/dashboard');
       } else {
         data = await api.register(formData);
         alert('Registration successful! Please login.');

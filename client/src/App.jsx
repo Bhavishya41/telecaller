@@ -1,12 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import ShopDetailScreen from './pages/ShopDetailScreen';
 import InstallPWA from './components/InstallPWA';
 
 function App() {
-  const isAuthenticated = !!localStorage.getItem('token');
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
   return (
     <Router>

@@ -1,24 +1,33 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import BusinessTable from '../components/BusinessTable';
 import AddBusinessModal from '../components/AddBusinessModal';
 import AssignStaffModal from '../components/AssignStaffModal';
 import RegisterBusinessModal from '../components/RegisterBusinessModal';
+import AnalyticsBanner from '../components/analyticsBanner';
 import Navbar from '../components/Navbar';
 import TelecallerTable from '../components/TelecallerTable';
 import { api } from '../api';
+import { fetchBusinesses } from '../store/businessSlice';
 import * as XLSX from 'xlsx';
 
 const Dashboard = () => {
-  const [businesses, setBusinesses] = useState([]);
-  const [user, setUser] = useState({});
+  const dispatch = useDispatch();
+
+  // Redux state
+  const { user } = useSelector((state) => state.auth);
+  const { items: businesses, loading: reduxLoading } = useSelector((state) => state.businesses);
+
+  // Local UI State
   const [showModal, setShowModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  
   // Team View State
   const [showTeam, setShowTeam] = useState(false);
   const [staff, setStaff] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [localLoading, setLocalLoading] = useState(false);
 
   // Selection State
   const [selectedIds, setSelectedIds] = useState([]);
@@ -32,14 +41,15 @@ const Dashboard = () => {
   });
 
   const [searchTerm, setSearchTerm] = useState('');
-
   const fileInputRef = useRef(null);
 
+  const loading = reduxLoading || localLoading;
+
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    setUser(userData);
-    fetchBusinesses(userData, filters);
-  }, []);
+    if (user) {
+      loadBusinesses(user, filters, searchTerm);
+    }
+  }, [user]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -48,7 +58,6 @@ const Dashboard = () => {
           if (tagName === 'input' || tagName === 'textarea' || document.activeElement.isContentEditable) {
               return;
           }
-
           e.preventDefault();
           setShowModal(true);
         }
@@ -61,43 +70,35 @@ const Dashboard = () => {
   const handleFilterChange = (e) => {
       const newFilters = { ...filters, [e.target.name]: e.target.value };
       setFilters(newFilters);
-      fetchBusinesses(user, newFilters, searchTerm);
+      loadBusinesses(user, newFilters, searchTerm);
   };
 
-  const fetchBusinesses = async (currentUser = user, currentFilters = filters, search = searchTerm) => {
-    try {
-        setLoading(true);
-        let params = {};
-        
-        if (currentUser.role === 'admin') {
-            params = { ...currentFilters };
-            if (params.category === 'All') delete params.category;
-            if (params.type === 'All') delete params.type;
-            if (params.registered === 'All') delete params.registered;
-            if (search) params.search = search;
-        } else {
-            params = { assignedTo: currentUser._id || currentUser.id };
-        }
-        
-        const data = await api.getBusinesses(params);
-        setBusinesses(data);
-        setSelectedIds([]); 
-    } catch (err) {
-        console.error(err);
-    } finally {
-        setLoading(false);
+  const loadBusinesses = (currentUser = user, currentFilters = filters, search = searchTerm) => {
+    let params = {};
+    
+    if (currentUser?.role === 'admin') {
+        params = { ...currentFilters };
+        if (params.category === 'All') delete params.category;
+        if (params.type === 'All') delete params.type;
+        if (params.registered === 'All') delete params.registered;
+        if (search) params.search = search;
+    } else if (currentUser) {
+        params = { assignedTo: currentUser._id || currentUser.id };
     }
+    
+    dispatch(fetchBusinesses(params));
+    setSelectedIds([]);
   };
 
   const fetchStaff = async () => {
     try {
-        setLoading(true);
+        setLocalLoading(true);
         const data = await api.getStaff();
         setStaff(data);
     } catch (err) {
         console.error("Failed to fetch staff:", err);
     } finally {
-        setLoading(false);
+        setLocalLoading(false);
     }
   };
 
@@ -105,15 +106,9 @@ const Dashboard = () => {
       if (!showTeam) {
           fetchStaff();
       } else {
-          fetchBusinesses();
+          loadBusinesses();
       }
       setShowTeam(!showTeam);
-  };
-
-  const handleLogout = () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/auth';
   };
 
   const toggleSelect = (id) => {
@@ -136,32 +131,32 @@ const Dashboard = () => {
   const handleDelete = async () => {
     if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} business(es)?`)) return;
     try {
-        setLoading(true);
+        setLocalLoading(true);
         await Promise.all(selectedIds.map(id => api.deleteBusiness(id)));
-        await fetchBusinesses();
+        loadBusinesses();
         setSelectedIds([]);
         alert("Operations completed successfully.");
     } catch (err) {
         alert("Some items could not be deleted.");
     } finally {
-        setLoading(false);
+        setLocalLoading(false);
     }
   };
 
   const handleConfirmRegister = async (followupMessage) => {
     try {
-        setLoading(true);
+        setLocalLoading(true);
         await Promise.all(selectedIds.map(id => api.updateBusiness(id, { 
             registered: true,
             followup: followupMessage
         })));
-        await fetchBusinesses();
+        loadBusinesses();
         setSelectedIds([]);
         alert("Businesses marked as registered successfully.");
     } catch (err) {
         alert("Failed to update status.");
     } finally {
-        setLoading(false);
+        setLocalLoading(false);
     }
   };
 
@@ -199,14 +194,14 @@ const Dashboard = () => {
                 country: item.country || "India"
             }));
 
-            setLoading(true);
+            setLocalLoading(true);
             await api.importBusinesses(formattedData);
             alert(`Successfully imported ${formattedData.length} businesses`);
-            await fetchBusinesses();
+            loadBusinesses();
         } catch (err) {
             alert("Import failed.");
         } finally {
-            setLoading(false);
+            setLocalLoading(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
@@ -215,24 +210,24 @@ const Dashboard = () => {
 
   return (
     <div className="h-screen bg-black text-white flex flex-col overflow-hidden">
-      {/* Navigation - Fixed Height */}
+      {/* Navigation */}
       <Navbar 
-        user={user} 
+        user={user || {}} 
         searchTerm={searchTerm} 
         onSearchChange={setSearchTerm} 
-        onSearchSubmit={() => fetchBusinesses(user, filters, searchTerm)}
-        onRefresh={() => showTeam ? fetchStaff() : fetchBusinesses()}
+        onSearchSubmit={() => loadBusinesses(user, filters, searchTerm)}
+        onRefresh={() => showTeam ? fetchStaff() : loadBusinesses()}
         onAddBusiness={() => setShowModal(true)}
         onShowTeam={toggleTeamView}
         showTeam={showTeam}
       />
       
-      {/* Main Content Area - Constrained to prevent page scroll */}
+      {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-h-0 w-full max-w-7xl mx-auto p-4 md:p-6 relative">
           
-          {/* Header & Filters Section - Stays at top */}
+          {/* Header & Filters Section */}
           <div className="shrink-0 space-y-4 mb-4">
-              {user.role === 'admin' ? (
+              {user?.role === 'admin' ? (
                     <div className="flex flex-col gap-3">
                         {/* Mobile Search & Filter Toggle */}
                         <div className="flex gap-2 mb-1 md:hidden">
@@ -245,7 +240,7 @@ const Dashboard = () => {
                                     placeholder="Search..." 
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && fetchBusinesses(user, filters, searchTerm)}
+                                    onKeyDown={(e) => e.key === 'Enter' && loadBusinesses(user, filters, searchTerm)}
                                     className="w-full pl-9 pr-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-zinc-600"
                                 />
                             </div>
@@ -273,9 +268,8 @@ const Dashboard = () => {
                                 <option value="false">Unregistered</option>
                             </select>
                             
-                             {/* Mobile Search Button within filters if needed or action to apply */}
                             <button 
-                                onClick={() => fetchBusinesses(user, filters, searchTerm)}
+                                onClick={() => loadBusinesses(user, filters, searchTerm)}
                                 className="md:hidden col-span-2 mt-2 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-indigo-900/20"
                             >
                                 Apply Filters & Search
@@ -284,9 +278,12 @@ const Dashboard = () => {
                     </div>
               ) : (
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xl text-zinc-400 font-light">Assignments for <span className="text-white font-normal">{user.pincode}</span></h2>
+                    <h2 className="text-xl text-zinc-400 font-light">Assignments for <span className="text-white font-normal">{user?.pincode}</span></h2>
                 </div>
               )}
+
+                {/* Fast API Analytics KPI Strip */}
+                <AnalyticsBanner leads={businesses} />
 
                 {/* Bulk Actions Bar */}
                 <div className="flex flex-col md:flex-row items-center justify-between bg-zinc-900/40 p-3 rounded-xl border border-zinc-800/60 gap-4">
@@ -304,7 +301,7 @@ const Dashboard = () => {
                     </div>
 
                     <div className="grid grid-cols-4 md:flex items-center gap-2 w-full md:w-auto">
-                        {user.role === 'admin' ? (
+                        {user?.role === 'admin' ? (
                             <>
                                 <button disabled={selectedIds.length === 0} onClick={() => setShowAssignModal(true)} className={`px-2 md:px-3 py-2 md:py-1.5 rounded-lg text-xs font-semibold transition-all border flex items-center justify-center gap-1 ${selectedIds.length > 0 ? 'bg-indigo-600/10 text-indigo-400 border-indigo-600/30 hover:bg-indigo-600/20' : 'opacity-30 cursor-not-allowed'}`}>
                                     <span className="md:hidden"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg></span>
@@ -333,7 +330,7 @@ const Dashboard = () => {
                 </div>
           </div>
 
-          {/* Table Container - This part scrolls */}
+          {/* Table Container */}
           <div className="flex-1 min-h-0 relative">
             {loading ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-10">
@@ -343,7 +340,7 @@ const Dashboard = () => {
                     </div>
                 </div>
             ) : showTeam ? (
-                <TelecallerTable staff={staff} isAdmin={user.role === 'admin'} />
+                <TelecallerTable staff={staff} isAdmin={user?.role === 'admin'} />
             ) : businesses.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center bg-zinc-900/20 border border-zinc-800/50 rounded-2xl border-dashed">
                     <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mb-4 border border-zinc-800">
@@ -364,11 +361,11 @@ const Dashboard = () => {
       </main>
 
       {/* Modals */}
-      {showModal && <AddBusinessModal onClose={() => setShowModal(false)} onAdded={() => fetchBusinesses()} />}
-      {showAssignModal && <AssignStaffModal onClose={() => setShowAssignModal(false)} onAssigned={() => { fetchBusinesses(); setSelectedIds([]); }} selectedCount={selectedIds.length} businessIds={selectedIds} />}
+      {showModal && <AddBusinessModal onClose={() => setShowModal(false)} onAdded={() => loadBusinesses()} />}
+      {showAssignModal && <AssignStaffModal onClose={() => setShowAssignModal(false)} onAssigned={() => { loadBusinesses(); setSelectedIds([]); }} selectedCount={selectedIds.length} businessIds={selectedIds} />}
       {showRegisterModal && <RegisterBusinessModal onClose={() => setShowRegisterModal(false)} onRegister={handleConfirmRegister} selectedCount={selectedIds.length} />}
     </div>
   );
 };
 
-export default Dashboard;   
+export default Dashboard;

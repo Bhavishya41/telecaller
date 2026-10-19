@@ -92,7 +92,11 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
   ];
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    setFormData({ 
+      ...formData, 
+      [name]: type === 'checkbox' ? checked : value 
+    });
   };
 
   const handleTypeChange = (option) => {
@@ -233,7 +237,8 @@ const AddBusinessModal = ({ onClose, onAdded, initialData = null, isEditMode = f
 
       const payload = {
           ...formData,
-          phoneNumbers: phones
+          phoneNumbers: phones,
+          registered: Boolean(formData.registered)
       };
 
       // Check if Edit Mode OR if we found an existing business ID via auto-fill
