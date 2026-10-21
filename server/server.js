@@ -1,4 +1,6 @@
 const express = require('express');
+const { openapiSpec } = require('./openapi');
+const { apiReference } = require("@scalar/express-api-reference")
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -19,6 +21,18 @@ mongoose.connect(process.env.MONGO_URI, {
 })
     .then(() => console.log('MongoDB Connected'))
     .catch(err => console.log(err));
+
+// Mount Scalar documentation route
+app.use(
+    '/docs',
+    apiReference({
+        theme: 'purple', // options: 'default' | 'alternate' | 'moon' | 'purple' | 'solarized'
+        darkMode: true,
+        spec: {
+            content: openapiSpec,
+        },
+    })
+);
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
