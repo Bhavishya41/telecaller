@@ -25,6 +25,9 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/businesses', require('./routes/businesses'));
 app.use('/api/users', require('./routes/users'));
 
+app.get("/health", (req, res) => {
+    return res.status(200).send({ msg: "Health Ok" })
+})
 
 // Start Server
 app.listen(PORT, () => {
